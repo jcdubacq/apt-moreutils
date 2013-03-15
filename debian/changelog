@@ -1,3 +1,9 @@
+apt-moreutils (2.1) unstable; urgency=low
+
+  * Fix formerly unimplemented option --signal of apt-tree
+
+ -- Jean-Christophe Dubacq <jcdubacq1@free.fr>  Fri, 15 Mar 2013 15:02:27 +0100
+
 apt-moreutils (2.0) unstable; urgency=low
 
   * Add apt-tree utility

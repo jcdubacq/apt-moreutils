@@ -177,7 +177,10 @@ def main():
         for pkgname in manual:
             if manual[pkgname]:
                 if pkgname in installed:
-                    print pkgname
+                    if signal==1:
+                        print pkgname + "+"
+                    else:
+                        print pkgname
                 else:
                     print pkgname + "-"
     if xunneeded==1:
