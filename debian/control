@@ -3,10 +3,10 @@ Section: misc
 Priority: optional
 Maintainer: Jean-Christophe Dubacq <jcdubacq1@free.fr>
 Build-depends: debhelper (>= 7.0.50~)
-Standards-Version: 3.8.4
-Vcs-Browser: https://www-lipn.univ-paris13.fr/projects/jcdubacq/browser/debian/trunk/apt-moreutils
-Vcs-Svn: https://www-lipn.univ-paris13.fr/svn/jcdubacq/debian/trunk/apt-moreutils
-Homepage: https://www-lipn.univ-paris13.fr/projects/jcdubacq/wiki/AptMoreUtils
+Standards-Version: 3.9.4
+Vcs-Browser: https://github.com/jcdubacq/apt-moreutils
+Vcs-Git: https://github.com/jcdubacq/apt-moreutils.git
+Homepage: https://github.com/jcdubacq/apt-moreutils
 
 Package: apt-moreutils
 Architecture: all
@@ -16,5 +16,8 @@ Description: Miscellaneous utilities for package management
  from, and assigns each package to an origin. It can then display how many
  packages come from each source and which ones.
  .
+ apt-tree gives a somewhat robust state of your installed packages, to be
+ able to replicate the same packages on another computer.
+ .
  apt-missing shows missing dependencies (or recommends, or else) of installed
- packages
+ packages.

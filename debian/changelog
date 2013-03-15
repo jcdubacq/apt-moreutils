@@ -1,3 +1,9 @@
+apt-moreutils (2.0) UNRELEASED; urgency=low
+
+  * Add apt-tree utility
+
+ -- Jean-Christophe Dubacq <jcdubacq1@free.fr>  Fri, 15 Mar 2013 14:38:57 +0100
+
 apt-moreutils (1.8) unstable; urgency=low
 
   * Remove useless scripts and unfinished work
