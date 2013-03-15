@@ -1,0 +1,52 @@
+.TH APT\-TREE "1" "February 2010" "2\.0" "User Commands"
+.SH NAME
+apt\-tree \- describe installed packages in a robust way
+.SH SYNOPSIS
+.B apt\-tree [options]
+.SH DESCRIPTION
+.\" Add any additional description here
+.PP
+apt\-tree tries to describe the installed packages in a robust way, such
+that installing the output of apt\-tree on a system with different
+version numbers (because the distribution has evolved for example) will
+result in hopefully the same packages installed (apart from being
+upgraded/downgraded).
+.PP
+apt\-tree lists all the packages that were manually installed, the
+packages that are part of a disjunctive clause of dependency (and as
+such guarantees as far as possible that the choices that were made when
+installing the packages are kept). It also lists with a \- sign after
+the package name all packages that could have been chosen (either
+because they are part of a disjunctive clause or because they provide a
+virtual package).
+.PP
+This algorithm has a few weaknesses: packages that would be removed by
+\f(CW\*(C`apt\-get autoremove\*(C'\fR will not be registered in the
+list.  Essential packages that were not marked as automatic will all be
+listed, thus fattening the description and making it less robust to
+changes in the name of the essential packages.
+.SH OPTIONS
+.TP
+\fB\-h\fR|\fB\-\-help\fR
+This help text
+.TP
+\fB\-d\fR|\fB\-\-depends\fR
+Do not consider Recommends as dependencies
+.TP
+\fB\-i\fR|\fB\-\-indirect\fR
+Display non\-trivial dependencies
+.TP
+\fB\-m\fR|\fB\-\-manual\fR
+Display manually selected packages
+.TP
+\fB\-u\fR|\fB\-\-unneeded\fR
+Display packages required but not installed followed by \-
+.TP
+\fB\-s\fR|\fB\-\-signal\fR
+Signal non\-trivial dependencies with a + sign
+.SH "AUTHOR"
+Copyright Jean-Christophe Dubacq 2013
+.SH "COPYING"
+This work is licensed under the \fISimplified \s-1BSD\s0 licence\fR. It is
+explicitly stated here that the license does not extend to the data
+managed by the program, in case anyone had doubts.

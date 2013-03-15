@@ -6,11 +6,57 @@ import apt_pkg
 import apt.progress.text
 import os
 progusage="apt-tree [options]"
-shortoptions=["h"]
+shortoptions=["h","d","i","m","u","s"]
 longoptions=["help",
+             "depends",
+             "indirect",
+             "manual",
+             "unneeded",
+             "signal",
              "help-nroff"]
-argstype=['']
-explanation=['This help text']
+argstype=['','','','','','','']
+explanation=['This help text',
+             'Do not consider Recommends as dependencies',
+             'Display non-trivial dependencies',
+             'Display manually selected packages',
+             'Display packages required but not installed followed by -',
+             'Signal non-trivial dependencies with a + sign'
+             ]
+
+provided={}
+installed={}
+manual={}
+evident={}
+nonEvident={}
+unneeded={}
+
+
+def markEvident(name,why):
+    """mark a package as a direct dependency of another package"""
+    if name in provided:
+        if len(provided[name])>1:
+            markProviders(name,why)
+        else:
+            evident[provided[name].keys()[0]]=True
+    else:
+        evident[name]=True
+
+
+def markProviders(name,why):
+    """mark providers of virtual package"""
+    for provider in provided[name]:
+        nonEvident[provider]=True
+
+def markNonEvident(name,why):
+    """mark a package as a dependency where some choice was made"""
+    if name in provided:
+        if len(provided[name])>1:
+            markProviders(name,why)
+        else:
+            nonEvident[provided[name].keys()[0]]=True
+    else:
+        nonEvident[name]=True
+
 
 def fmt_dep(dep):
     """Format a Dependency object [of apt_pkg] as a string."""
@@ -49,61 +95,6 @@ def usagenroff():
         print x
         print explanation[k]
 
-## First, register all virtual packages
-# For all packages as pkg
-#   For all versions as pkgv
-#     For all name in pkgv.provides
-#       provided[name]+=1
-#       provider[name][provided[name]-1]=pkg.name
-## Find all evident packages
-# For all installed packages as pkg
-#  installed[pkg.name]=1
-#  If pkg is manual
-#    manual[pkg.name]=1
-# For all installed packages as pkg
-#   For all installed versions as pkgv
-#     For all types as type in [Depends,Pre-Depends,Recommends]
-#       For all deps as dep
-#         if #clauses=1:
-#           if provided[clauses[0].name]==0:
-#             evident[clauses[0].name]=1
-#           if provided[clauses[0].name]==1:
-#             evident[lastprovider[clauses[0].name]]=1
-#           if provided[clauses[0].name]>2:
-#             markProviders(clauses[0].name)
-#         else
-#           For all clause as orClause:
-#             if provided[orClause.name]>1:
-#               markProviders(orClause.name)
-#             else
-#               if installed[orClause.name]==1
-#                 nonEvident[orClause.name]=1
-#               else
-#                 unneeded[orClause.name]=1
-## Results:
-# If installed[name] && (manual[name]||essential[name]) => Package needed
-# If installed[name] && nonEvident[name] => Package needed
-# If unneeded[name] => Package not wanted
-# If !installed[name] && essential[name] => Package not wanted
-# If evident[name] && manual[name] => Package might be marked auto
-
-# We could be more thorough if we reduced the clauses first, but less resistant
-# to versioning. The relations may change in the future, so nothing can be
-# completely error-proof (without very strict versioning).
-
-# One should try to reach a state by installing all needed packages
-# and removing all unneeded packages at the same time. If no solution
-# comes out of the solver... there is a problem (that the solver cannot
-# resolve anyway).
-
-# markProviders(name):
-# for all providers[name] as pkg
-#   if installed[pkg]==1:
-#     nonEvident[pkg]=1
-#   else
-#     unneeded[pkg]=1
-
-
 def main():
     """The main function"""
     apt_pkg.init_config()
@@ -114,6 +105,11 @@ def main():
         usage()
         sys.exit(1)
     xtypes=[]
+    xall=1
+    xmanual=0
+    xindirect=0
+    xunneeded=0
+    signal=0
     for o,a in opts:
         if o in ("-h","--help"):
             usage()
@@ -121,8 +117,28 @@ def main():
         elif o in ("--help-nroff"):
             usagenroff()
             sys.exit()
+        elif o in ("-d","--depends"):
+            xtypes=['Depends','Pre-Depends']
+        elif o in ("-m","--manual"):
+            xall=0
+            xmanual=1
+            xtypes=['Depends','Pre-Depends']
+        elif o in ("-u","--unneeded"):
+            xall=0
+            xunneeded=1
+            xtypes=['Depends','Pre-Depends']
+        elif o in ("-i","--indirect"):
+            xall=0
+            xindirect=1
+            xtypes=['Depends','Pre-Depends']
+        elif o in ("-s","--signal"):
+            signal=1
         else:
             assert False, "unhandled option"
+    if xall==1:
+        xindirect=1
+        xunneeded=1
+        xmanual=1
     if len(xtypes)==0:
         xtypes=['Depends','Pre-Depends','Recommends']
     apt_pkg.init_system()
@@ -130,28 +146,55 @@ def main():
     cache=apt_pkg.Cache(apt.progress.text.OpProgress(f))
     f.close()
     depcache=apt_pkg.DepCache(cache)
-    provided={}
-    installed={}
-    manual={}
     for pkg in sorted(cache.packages, key=lambda pkg: pkg.name):
         for version in pkg.version_list:
             for provideElement in version.provides_list:
-                if provideElement[0] in provided:
-                    provided[provideElement[0]][pkg.name]=1
+                providedName=provideElement[0]
+                if providedName in provided:
+                    provided[providedName][pkg.name]=True
                 else:
-                    provided[provideElement[0]]={pkg.name:1}
+                    provided[providedName]={pkg.name:True}
     for pkg in sorted(cache.packages, key=lambda pkg: pkg.name):
         version=pkg.current_ver
         if version != None and pkg.current_state == apt_pkg.CURSTATE_INSTALLED:
             installed[pkg.name]=True
-            manual[pkg.name]=depcache.is_auto_installed(pkg)
+            manual[pkg.name]=not(depcache.is_auto_installed(pkg))
     for pkg in sorted(cache.packages, key=lambda pkg: pkg.name):
         version=pkg.current_ver
         if version != None and pkg.current_state == apt_pkg.CURSTATE_INSTALLED:
             clauses=[]
-            for dep in pkg.rev_depends_list:
-                if dep.dep_type in xtypes:
-                    clauses.append(dep)
-            print "%s : %d" % (pkg.name,len(clauses))
+            deplist=version.depends_list_str
+            for deptype in deplist:
+                if deptype not in xtypes:
+                    continue
+                for subclause in deplist[deptype]:
+                    if len(subclause)==1:
+                        markEvident(subclause[0][0],pkg.name)
+                    else:
+                        for deppkg,depver,depnum in subclause:
+                            markNonEvident(deppkg,pkg.name)
+    if xmanual==1:
+        for pkgname in manual:
+            if manual[pkgname]:
+                if pkgname in installed:
+                    print pkgname
+                else:
+                    print pkgname + "-"
+    if xunneeded==1:
+        for pkgname in evident:
+            if (pkgname in manual) and (manual[pkgname]):
+                continue
+            if pkgname not in installed:
+                print pkgname + "-"
+    for pkgname in nonEvident:
+        if (pkgname in manual and manual[pkgname]) or (pkgname in evident):
+            continue
+        if pkgname in installed:
+            if xindirect==1:
+                print pkgname
+        else:
+            if xunneeded==1:
+                print pkgname + "-"
+
 if __name__ == '__main__':
     main() 
