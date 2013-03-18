@@ -173,9 +173,11 @@ def main():
                     else:
                         for deppkg,depver,depnum in subclause:
                             markNonEvident(deppkg,pkg.name)
+    forget={}
     if xmanual==1:
         for pkgname in manual:
             if manual[pkgname]:
+                forget[pkgname]=True
                 if pkgname in installed:
                     if signal==1:
                         print pkgname + "+"
@@ -185,13 +187,15 @@ def main():
                     print pkgname + "-"
     if xunneeded==1:
         for pkgname in evident:
-            if (pkgname in manual) and (manual[pkgname]):
+            if (pkgname in forget):
                 continue
             if pkgname not in installed:
+                forget[pkgname]=True
                 print pkgname + "-"
     for pkgname in nonEvident:
-        if (pkgname in manual and manual[pkgname]) or (pkgname in evident):
+        if (pkgname in forget):
             continue
+        forget[pkgname]=True
         if pkgname in installed:
             if xindirect==1:
                 print pkgname
