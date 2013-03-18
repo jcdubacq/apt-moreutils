@@ -12,15 +12,13 @@ longoptions=["help",
              "indirect",
              "manual",
              "unneeded",
-             "signal",
              "help-nroff"]
 argstype=['','','','','','','']
 explanation=['This help text',
              'Do not consider Recommends as dependencies',
              'Display non-trivial dependencies',
              'Display manually selected packages',
-             'Display packages required but not installed followed by -',
-             'Signal non-trivial dependencies with a + sign'
+             'Display packages required but not installed followed by -'
              ]
 
 provided={}
@@ -29,7 +27,15 @@ manual={}
 evident={}
 nonEvident={}
 unneeded={}
+displaytext="\nThe codes for the display is by order of precedence:\
+M manually installed\
+S mentioned in a non-trivial dependency and installed\
+\
+s mentioned in a non-trivial dependency and uninstalled"
 
+def outputPackage(code,name):
+    """output a package name with appropriate formatting"""
+    print "%s|%s" % (code,name)
 
 def markEvident(name,why):
     """mark a package as a direct dependency of another package"""
@@ -109,7 +115,7 @@ def main():
     xmanual=0
     xindirect=0
     xunneeded=0
-    signal=0
+
     for o,a in opts:
         if o in ("-h","--help"):
             usage()
@@ -131,8 +137,6 @@ def main():
             xall=0
             xindirect=1
             xtypes=['Depends','Pre-Depends']
-        elif o in ("-s","--signal"):
-            signal=1
         else:
             assert False, "unhandled option"
     if xall==1:
@@ -179,29 +183,26 @@ def main():
             forget[pkgname]=True
             if xmanual==1:
                 if pkgname in installed:
-                    if signal==1:
-                        print pkgname + "+"
-                    else:
-                        print pkgname
+                    outputPackage("M",pkgname)
                 else:
-                    print pkgname + "-"
+                    outputPackage("m",pkgname) # WTF ?
     for pkgname in evident:
         if (pkgname in forget):
             continue
         if pkgname not in installed:
             forget[pkgname]=True
             if xunneeded==1:
-                print pkgname + "-"
+                outputPackage("s",pkgname)
     for pkgname in nonEvident:
         if (pkgname in forget):
             continue
         forget[pkgname]=True
         if pkgname in installed:
             if xindirect==1:
-                print pkgname
+                outputPackage("S",pkgname)
         else:
             if xunneeded==1:
-                print pkgname + "-"
+                outputPackage("s",pkgname)
 
 if __name__ == '__main__':
     main() 
